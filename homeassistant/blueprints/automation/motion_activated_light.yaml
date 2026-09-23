@@ -122,6 +122,7 @@ mode: restart
 max_exceeded: silent
 
 variables:
+  target_lights: !input target_lights
   motion_sensor: !input motion_sensor
   lux_sensor: !input lux_sensor
   lux_lower: !input lux_lower
@@ -200,6 +201,12 @@ action:
             id: lux_above
           - condition: template
             value_template: >
+              {{ expand(target_lights.entity_id)
+                 | selectattr('state', 'eq', 'on')
+                 | list
+                 | count > 0 }}
+          - condition: template
+            value_template: >
               {% if blocking_entity in [none, '', []] %}
                 true
               {% elif blocking_mode in ['off', 'both'] %}
@@ -215,6 +222,12 @@ action:
       - conditions:
           - condition: trigger
             id: motion_off
+          - condition: template
+            value_template: >
+              {{ expand(target_lights.entity_id)
+                 | selectattr('state', 'eq', 'on')
+                 | list
+                 | count > 0 }}
           - condition: template
             value_template: >
               {% if blocking_entity in [none, '', []] %}
