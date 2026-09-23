@@ -1,5 +1,7 @@
 blueprint:
   name: Advanced Motion Activated Light with Lux Threshold & Blocking Entity
+  author: Martin Groeneveld
+  source_url: https://raw.githubusercontent.com/groveld/home-assistant/refs/heads/main/homeassistant/blueprints/automation/motion_activated_light.yaml
   description: >
     Turn on a light when motion is detected and the illuminance (lux) is below
     the configured lower threshold, or when the room gets darker while motion is
@@ -31,7 +33,7 @@ blueprint:
     no_motion_wait:
       name: Wait Time (No Motion)
       description: Time to wait after last motion before turning the light off.
-      default: 120
+      default: 5
       selector:
         number:
           min: 5
