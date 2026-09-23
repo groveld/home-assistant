@@ -25,6 +25,18 @@ blueprint:
             - domain: binary_sensor
               device_class: occupancy
 
+    no_motion_wait:
+      name: Wait Time (No Motion)
+      description: Time to wait after last motion before turning the light off.
+      default: 120
+      selector:
+        number:
+          min: 5
+          max: 3600
+          step: 5
+          unit_of_measurement: seconds
+          mode: slider
+
     lux_sensor:
       name: Illuminance (Lux) Sensor
       description: The sensor used to measure ambient light level.
@@ -59,18 +71,6 @@ blueprint:
           max: 2000
           step: 1
           unit_of_measurement: lx
-          mode: slider
-
-    no_motion_wait:
-      name: Wait Time (No Motion)
-      description: Time to wait after last motion before turning the light off.
-      default: 120
-      selector:
-        number:
-          min: 0
-          max: 3600
-          step: 5
-          unit_of_measurement: seconds
           mode: slider
 
     blocking_entity:
