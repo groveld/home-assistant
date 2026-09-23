@@ -1,6 +1,4 @@
 blueprint:
-  source_url: https://raw.githubusercontent.com/groveld/home-assistant/refs/heads/main/homeassistant/blueprints/automation/motion_activated_light.yaml
-  author: groveld
   name: Advanced Motion Activated Light with Lux Threshold & Blocking Entity
   description: >
     Turn on a light when motion is detected, but only if the illuminance (lux)

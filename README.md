@@ -4,7 +4,7 @@ A collection of Home Assistant blueprints, scripts, and other configurations tha
 
 ## 📂 Repository Structure
 
-```
+```txt
 homeassistant/
 ├── blueprints/
 │   ├── automation/
@@ -17,9 +17,10 @@ homeassistant/
 
 ## 🔵 Blueprints
 
-Blueprints can be imported directly into your Home Assistant instance using the **Import Blueprint** button below each entry, or by navigating to:
+Blueprints can be imported directly into your Home Assistant instance using the **Import Blueprint** button below each
+entry, or by navigating to:
 
-**Settings → Automations & Scenes → Blueprints → Import Blueprint**
+`Settings → Automations & Scenes → Blueprints → Import Blueprint`
 
 ---
 
