@@ -1,9 +1,12 @@
 blueprint:
   name: Advanced Motion Activated Light with Lux Threshold & Blocking Entity
   description: >
-    Turn on a light when motion is detected, but only if the illuminance (lux)
-    is within a configured range. An optional blocking entity can prevent the
-    light from turning on, off, or both (useful as a "pet safe" override).
+    Turn on a light when motion is detected and the illuminance (lux) is below
+    the configured lower threshold, or when the room gets darker while motion is
+    already present. Turn the light off when the room becomes bright enough, or
+    when motion stops for the configured time. An optional blocking entity can
+    prevent the light from turning on, off, or both (useful as a "pet safe"
+    override).
   domain: automation
   input:
     target_lights:
@@ -47,10 +50,8 @@ blueprint:
 
     lux_lower:
       name: Lux Lower Threshold
-      description: >
-        Minimum lux value of the working range. The light will only turn on
-        if the current lux is at or below this value.
-      default: 0
+      description: The light will only turn on if the current lux is below this value.
+      default: 100
       selector:
         number:
           min: 0
@@ -61,13 +62,11 @@ blueprint:
 
     lux_upper:
       name: Lux Upper Threshold
-      description: >
-        Maximum lux value of the working range. The light will turn off
-        if the current lux is at or above this value.
+      description: The light will turn off if the current lux is above this value.
       default: 500
       selector:
         number:
-          min: 100
+          min: 0
           max: 2000
           step: 1
           unit_of_measurement: lx
@@ -132,14 +131,6 @@ variables:
   blocking_mode: !input blocking_mode
 
 trigger:
-  - platform: numeric_state
-    entity_id: !input lux_sensor
-    below: !input lux_lower
-    id: lux_below
-  - platform: numeric_state
-    entity_id: !input lux_sensor
-    above: !input lux_upper
-    id: lux_above
   - platform: state
     entity_id: !input motion_sensor
     to: "on"
@@ -150,21 +141,26 @@ trigger:
     for:
       seconds: !input no_motion_wait
     id: motion_off
+  - platform: numeric_state
+    entity_id: !input lux_sensor
+    below: !input lux_lower
+    id: lux_below
+  - platform: numeric_state
+    entity_id: !input lux_sensor
+    above: !input lux_upper
+    id: lux_above
 
 condition: []
 
 action:
   - choose:
-      # ---------- MOTION DETECTED (turn ON) ----------
+      # ---------- MOTION DETECTED + DARK ENOUGH (turn ON) ----------
       - conditions:
           - condition: trigger
             id: motion_on
-          # Lux must be within working range
           - condition: template
             value_template: >
-              {{ states(lux_sensor) | float(0) >= (lux_lower | float(0))
-                 and states(lux_sensor) | float(0) <= (lux_upper | float(0)) }}
-          # Blocking check for turning ON
+              {{ states(lux_sensor) | float(0) <= (lux_lower | float(0)) }}
           - condition: template
             value_template: >
               {% if blocking_entity in [none, '', []] %}
@@ -178,16 +174,30 @@ action:
           - service: light.turn_on
             target: !input target_lights
 
-      # ---------- LUX OUTSIDE RANGE WHILE OCCUPIED (turn OFF) ----------
+      # ---------- ROOM GETS DARKER WHILE ALREADY OCCUPIED (turn ON) ----------
       - conditions:
           - condition: trigger
-            id:
-              - lux_below
-              - lux_above
+            id: lux_below
           - condition: state
             entity_id: !input motion_sensor
             state: "on"
-          # Blocking check for turning OFF
+          - condition: template
+            value_template: >
+              {% if blocking_entity in [none, '', []] %}
+                true
+              {% elif blocking_mode in ['on', 'both'] %}
+                {{ states(blocking_entity) != blocking_state }}
+              {% else %}
+                true
+              {% endif %}
+        sequence:
+          - service: light.turn_on
+            target: !input target_lights
+
+      # ---------- ROOM IS BRIGHT ENOUGH (turn OFF) ----------
+      - conditions:
+          - condition: trigger
+            id: lux_above
           - condition: template
             value_template: >
               {% if blocking_entity in [none, '', []] %}
@@ -205,7 +215,6 @@ action:
       - conditions:
           - condition: trigger
             id: motion_off
-          # Blocking check for turning OFF
           - condition: template
             value_template: >
               {% if blocking_entity in [none, '', []] %}
