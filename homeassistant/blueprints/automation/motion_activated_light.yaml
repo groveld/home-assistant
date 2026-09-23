@@ -49,7 +49,7 @@ blueprint:
       name: Lux Lower Threshold
       description: >
         Minimum lux value of the working range. The light will only turn on
-        if the current lux is at or above this value.
+        if the current lux is at or below this value.
       default: 0
       selector:
         number:
@@ -62,19 +62,19 @@ blueprint:
     lux_upper:
       name: Lux Upper Threshold
       description: >
-        Maximum lux value of the working range. The light will only turn on
-        if the current lux is at or below this value.
-      default: 100
+        Maximum lux value of the working range. The light will turn off
+        if the current lux is at or above this value.
+      default: 500
       selector:
         number:
-          min: 0
+          min: 100
           max: 2000
           step: 1
           unit_of_measurement: lx
           mode: slider
 
     blocking_entity:
-      name: Blocking / Pet-Safe Sensor (Optional)
+      name: Blocking Sensor (Optional)
       description: >
         An optional binary sensor or input boolean that can block the automation.
         Combine with the "Blocking Mode" below to choose what it blocks.
@@ -116,7 +116,7 @@ blueprint:
               value: "on"
             - label: "Block turning OFF"
               value: "off"
-            - label: "Block both ON and OFF"
+            - label: "Block turning ON and OFF"
               value: "both"
 
 mode: restart
