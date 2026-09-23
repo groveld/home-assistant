@@ -1,0 +1,221 @@
+blueprint:
+  name: Advanced Motion Activated Light with Lux Threshold & Blocking Entity
+  description: >
+    Turn on a light when motion is detected, but only if the illuminance (lux)
+    is within a configured range. An optional blocking entity can prevent the
+    light from turning on, off, or both (useful as a "pet safe" override).
+  domain: automation
+  author: Custom Blueprint
+  input:
+    target_lights:
+      name: Light(s)
+      description: The light(s) to control.
+      selector:
+        target:
+          entity:
+            domain: light
+
+    motion_sensor:
+      name: Motion Sensor
+      description: The motion/occupancy sensor that triggers the light.
+      selector:
+        entity:
+          filter:
+            - domain: binary_sensor
+              device_class: motion
+            - domain: binary_sensor
+              device_class: occupancy
+
+    lux_sensor:
+      name: Illuminance (Lux) Sensor
+      description: The sensor used to measure ambient light level.
+      selector:
+        entity:
+          domain: sensor
+          device_class: illuminance
+
+    lux_lower:
+      name: Lux Lower Threshold
+      description: >
+        Minimum lux value of the working range. The light will only turn on
+        if the current lux is at or above this value.
+      default: 0
+      selector:
+        number:
+          min: 0
+          max: 2000
+          step: 1
+          unit_of_measurement: lx
+          mode: slider
+
+    lux_upper:
+      name: Lux Upper Threshold
+      description: >
+        Maximum lux value of the working range. The light will only turn on
+        if the current lux is at or below this value.
+      default: 100
+      selector:
+        number:
+          min: 0
+          max: 2000
+          step: 1
+          unit_of_measurement: lx
+          mode: slider
+
+    no_motion_wait:
+      name: Wait Time (No Motion)
+      description: Time to wait after last motion before turning the light off.
+      default: 120
+      selector:
+        number:
+          min: 0
+          max: 3600
+          step: 5
+          unit_of_measurement: seconds
+          mode: slider
+
+    blocking_entity:
+      name: Blocking / Pet-Safe Sensor (Optional)
+      description: >
+        An optional binary sensor or input boolean that can block the automation.
+        Combine with the "Blocking Mode" below to choose what it blocks.
+      default: []
+      selector:
+        entity:
+          filter:
+            - domain: binary_sensor
+            - domain: input_boolean
+          multiple: false
+
+    blocking_state:
+      name: Blocking State
+      description: >
+        Which state of the blocking entity should be considered "blocking".
+      default: "on"
+      selector:
+        select:
+          mode: dropdown
+          options:
+            - label: "Block when ON"
+              value: "on"
+            - label: "Block when OFF"
+              value: "off"
+
+    blocking_mode:
+      name: Blocking Mode
+      description: >
+        Choose what the blocking entity prevents:
+        - Turn ON only
+        - Turn OFF only
+        - Both (block all actions)
+      default: "on"
+      selector:
+        select:
+          mode: dropdown
+          options:
+            - label: "Block turning ON"
+              value: "on"
+            - label: "Block turning OFF"
+              value: "off"
+            - label: "Block both ON and OFF"
+              value: "both"
+
+mode: restart
+max_exceeded: silent
+
+variables:
+  motion_sensor: !input motion_sensor
+  lux_sensor: !input lux_sensor
+  lux_lower: !input lux_lower
+  lux_upper: !input lux_upper
+  blocking_entity: !input blocking_entity
+  blocking_state: !input blocking_state
+  blocking_mode: !input blocking_mode
+
+trigger:
+  - platform: numeric_state
+    entity_id: !input lux_sensor
+    below: !input lux_lower
+    id: lux_below
+  - platform: numeric_state
+    entity_id: !input lux_sensor
+    above: !input lux_upper
+    id: lux_above
+  - platform: state
+    entity_id: !input motion_sensor
+    to: "on"
+    id: motion_on
+  - platform: state
+    entity_id: !input motion_sensor
+    to: "off"
+    for:
+      seconds: !input no_motion_wait
+    id: motion_off
+
+condition: []
+
+action:
+  - choose:
+      # ---------- MOTION DETECTED (turn ON) ----------
+      - conditions:
+          - condition: trigger
+            id: motion_on
+          # Lux must be within working range
+          - condition: template
+            value_template: >
+              {{ states(lux_sensor) | float(0) >= (lux_lower | float(0))
+                 and states(lux_sensor) | float(0) <= (lux_upper | float(0)) }}
+          # Blocking check for turning ON
+          - condition: template
+            value_template: >
+              {% if blocking_entity in [none, '', []] %}
+                true
+              {% elif blocking_mode in ['on', 'both'] %}
+                {{ states(blocking_entity) != blocking_state }}
+              {% else %}
+                true
+              {% endif %}
+        sequence:
+          - service: light.turn_on
+            target: !input target_lights
+
+      # ---------- LUX OUTSIDE RANGE WHILE OCCUPIED (turn OFF) ----------
+      - conditions:
+          - condition: trigger
+            id:
+              - lux_below
+              - lux_above
+          - condition: state
+            entity_id: !input motion_sensor
+            state: "on"
+          # Blocking check for turning OFF
+          - condition: template
+            value_template: >
+              {% if blocking_entity in [none, '', []] %}
+                true
+              {% elif blocking_mode in ['off', 'both'] %}
+                {{ states(blocking_entity) != blocking_state }}
+              {% else %}
+                true
+              {% endif %}
+        sequence:
+          - service: light.turn_off
+            target: !input target_lights
+
+      # ---------- NO MOTION (turn OFF) ----------
+      - conditions:
+          - condition: trigger
+            id: motion_off
+          # Blocking check for turning OFF
+          - condition: template
+            value_template: >
+              {% if blocking_entity in [none, '', []] %}
+                true
+              {% elif blocking_mode in ['off', 'both'] %}
+                {{ states(blocking_entity) != blocking_state }}
+              {% else %}
+                true
+              {% endif %}
+        sequence:
+          - service: light.turn_off
+            target: !input target_lights
