@@ -1,13 +1,11 @@
 blueprint:
-  name: Advanced Motion Activated Light with Lux Threshold & Blocking Entity
+  source_url: https://raw.githubusercontent.com/groveld/home-assistant/refs/heads/main/homeassistant/blueprints/automation/motion_activated_light.yaml
   author: groveld
+  name: Advanced Motion Activated Light with Lux Threshold & Blocking Entity
   description: >
     Turn on a light when motion is detected, but only if the illuminance (lux)
     is within a configured range. An optional blocking entity can prevent the
     light from turning on, off, or both (useful as a "pet safe" override).
-  source_url: https://raw.githubusercontent.com/groveld/home-assistant/refs/heads/main/homeassistant/blueprints/automation/motion_activated_light.yaml
-  homeassistant:
-    min_version: 2023.8.0
   domain: automation
   input:
     target_lights:

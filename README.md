@@ -27,7 +27,7 @@ Blueprints can be imported directly into your Home Assistant instance using the 
 
 #### [Advanced Motion Activated Light with Lux Threshold & Blocking Entity](https://raw.githubusercontent.com/groveld/home-assistant/refs/heads/main/homeassistant/blueprints/automation/motion_activated_light.yaml)
 
-[![Import Blueprint](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?url=https://raw.githubusercontent.com/groveld/home-assistant/main/homeassistant/blueprints/automation/motion_activated_light.yaml)
+[![Import Blueprint](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https://raw.githubusercontent.com/groveld/home-assistant/main/homeassistant/blueprints/automation/motion_activated_light.yaml)
 
 ---
 
