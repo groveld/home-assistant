@@ -1,0 +1,250 @@
+blueprint:
+  name: Grid power monitor (blackout / brownout / overvoltage)
+  author: Martin Groeneveld
+  source_url: https://raw.githubusercontent.com/groveld/home-assistant/refs/heads/main/homeassistant/blueprints/automation/grid_power_monitor.yaml
+  description: >
+    Monitors a DSMR / P1 smart meter for grid problems and sends notifications for:
+
+    - **Brownout**: voltage below the low threshold
+    - **Overvoltage**: voltage above the high threshold
+    - **Blackout**: the voltage sensor becomes unavailable (the P1 reader loses power)
+    - **Recovery**: voltage back to normal / power restored (with duration)
+    - **Voltage sag / swell counters** increasing (catches short events)
+    - **Power failure counters** increasing (meter confirms an outage)
+
+    Default thresholds follow EN 50160: 230 V ±10% = 207-253 V.
+  domain: automation
+  input:
+    voltage_sensor:
+      name: Voltage sensor
+      description: The voltage sensor of your meter (e.g. "Voltage Phase 1").
+      selector:
+        entity:
+          filter:
+            - domain: sensor
+    low_voltage:
+      name: Low voltage threshold (brownout)
+      default: 207
+      selector:
+        number:
+          min: 100
+          max: 240
+          step: 1
+          unit_of_measurement: V
+          mode: box
+    high_voltage:
+      name: High voltage threshold (overvoltage)
+      default: 253
+      selector:
+        number:
+          min: 230
+          max: 300
+          step: 1
+          unit_of_measurement: V
+          mode: box
+    brownout_delay:
+      name: Brownout / overvoltage delay
+      description: How long the voltage must stay out of range before notifying. Keep it short.
+      default:
+        seconds: 3
+      selector:
+        duration:
+    blackout_delay:
+      name: Blackout delay
+      description: >
+        How long the voltage sensor must be unavailable before it counts as a blackout.
+        Prevents false alarms from Wi-Fi hiccups of the P1 reader.
+      default:
+        seconds: 30
+      selector:
+        duration:
+    sag_counters:
+      name: Voltage sag counters (optional)
+      description: e.g. "Voltage Sags Phase 1"
+      default: []
+      selector:
+        entity:
+          multiple: true
+          filter:
+            - domain: sensor
+    swell_counters:
+      name: Voltage swell counters (optional)
+      description: e.g. "Voltage Swells Phase 1"
+      default: []
+      selector:
+        entity:
+          multiple: true
+          filter:
+            - domain: sensor
+    failure_counters:
+      name: Power failure counters (optional)
+      description: e.g. "Electricity Failures" and "Electricity Long Failures"
+      default: []
+      selector:
+        entity:
+          multiple: true
+          filter:
+            - domain: sensor
+    notify_service:
+      name: Notify action
+      description: >
+        e.g. notify.mobile_app_your_phone (or a notify group). Leave empty to disable.
+      default: ""
+      selector:
+        text:
+    critical:
+      name: Critical notifications
+      description: >
+        Blackout, brownout and overvoltage alerts bypass silent / Do Not Disturb mode
+        (iOS critical alert, Android alarm stream).
+      default: true
+      selector:
+        boolean:
+    persistent:
+      name: Also create a persistent notification in Home Assistant
+      default: true
+      selector:
+        boolean:
+    notify_on_restore:
+      name: Notify when power / voltage is back to normal
+      default: true
+      selector:
+        boolean:
+
+mode: queued
+max: 10
+
+triggers:
+  - trigger: numeric_state
+    entity_id: !input voltage_sensor
+    below: !input low_voltage
+    for: !input brownout_delay
+    id: brownout
+  - trigger: numeric_state
+    entity_id: !input voltage_sensor
+    above: !input high_voltage
+    for: !input brownout_delay
+    id: overvoltage
+  - trigger: numeric_state
+    entity_id: !input voltage_sensor
+    above: !input low_voltage
+    below: !input high_voltage
+    for:
+      seconds: 30
+    id: normal
+  - trigger: state
+    entity_id: !input voltage_sensor
+    to: ["unavailable", "unknown"]
+    for: !input blackout_delay
+    id: blackout
+  - trigger: state
+    entity_id: !input voltage_sensor
+    from: ["unavailable", "unknown"]
+    not_to: ["unavailable", "unknown"]
+    id: restored
+  - trigger: state
+    entity_id: !input sag_counters
+    id: sag
+  - trigger: state
+    entity_id: !input swell_counters
+    id: swell
+  - trigger: state
+    entity_id: !input failure_counters
+    id: failure
+
+variables:
+  voltage_sensor: !input voltage_sensor
+  low: !input low_voltage
+  high: !input high_voltage
+  blackout_delay: !input blackout_delay
+  notify_service: !input notify_service
+  critical: !input critical
+  persistent: !input persistent
+  notify_on_restore: !input notify_on_restore
+  event: "{{ trigger.id }}"
+  voltage: "{{ states(voltage_sensor) }}"
+  from_num: "{{ trigger.from_state is not none and trigger.from_state.state | is_number }}"
+  to_num: "{{ trigger.to_state is not none and trigger.to_state.state | is_number }}"
+  blackout_s: >
+    {{ (blackout_delay.hours | default(0)) * 3600
+       + (blackout_delay.minutes | default(0)) * 60
+       + (blackout_delay.seconds | default(0)) }}
+  outage_s: >
+    {% if trigger.from_state is not none %}
+      {{ (now() - trigger.from_state.last_changed).total_seconds() | int }}
+    {% else %}0{% endif %}
+  duration: >
+    {% set s = outage_s | int %}
+    {{ '%d:%02d:%02d' % (s // 3600, (s % 3600) // 60, s % 60) }}
+  entity_name: >
+    {{ state_attr(trigger.entity_id, 'friendly_name') or trigger.entity_id }}
+  should_notify: >
+    {% if event in ['brownout', 'overvoltage', 'blackout'] %}
+      true
+    {% elif event == 'normal' %}
+      {{ notify_on_restore and from_num and
+         (trigger.from_state.state | float < low or trigger.from_state.state | float > high) }}
+    {% elif event == 'restored' %}
+      {{ notify_on_restore and outage_s | int >= blackout_s | int }}
+    {% elif event in ['sag', 'swell', 'failure'] %}
+      {{ from_num and to_num and trigger.to_state.state | float > trigger.from_state.state | float }}
+    {% else %}
+      false
+    {% endif %}
+  title: >
+    {% set titles = {
+      'brownout': '⚠️ Brownout detected',
+      'overvoltage': '⚠️ Overvoltage detected',
+      'blackout': '🔴 Power outage',
+      'normal': '✅ Voltage back to normal',
+      'restored': '✅ Power restored',
+      'sag': '⚡ Voltage sag registered',
+      'swell': '⚡ Voltage swell registered',
+      'failure': '⚡ Power failure registered'
+    } %}
+    {{ titles.get(event, 'Grid monitor') }}
+  message: >
+    {% set t = now().strftime('%H:%M:%S') %}
+    {% if event == 'brownout' %}
+      Grid voltage dropped to {{ voltage }} V at {{ t }} (limit {{ low }} V). Your UPS may be running on battery.
+    {% elif event == 'overvoltage' %}
+      Grid voltage rose to {{ voltage }} V at {{ t }} (limit {{ high }} V).
+    {% elif event == 'blackout' %}
+      The smart meter stopped reporting at {{ t }}. Probable grid outage. Devices are running on UPS battery.
+    {% elif event == 'normal' %}
+      Voltage is {{ voltage }} V again (was {{ trigger.from_state.state }} V).
+    {% elif event == 'restored' %}
+      The meter is reporting again at {{ t }}. Voltage {{ voltage }} V. Outage lasted {{ duration }}.
+    {% elif event in ['sag', 'swell', 'failure'] %}
+      {{ entity_name }} went from {{ trigger.from_state.state }} to {{ trigger.to_state.state }} at {{ t }}. Current voltage {{ voltage }} V.
+    {% endif %}
+  push_data: >
+    {% if critical and event in ['brownout', 'overvoltage', 'blackout'] %}
+      {{ {'push': {'sound': {'name': 'default', 'critical': 1, 'volume': 1.0}},
+          'ttl': 0, 'priority': 'high', 'channel': 'alarm_stream'} }}
+    {% else %}
+      {{ {} }}
+    {% endif %}
+
+actions:
+  - condition: template
+    value_template: "{{ should_notify }}"
+  - if:
+      - condition: template
+        value_template: "{{ notify_service | trim != '' }}"
+    then:
+      - action: "{{ notify_service | trim }}"
+        continue_on_error: true
+        data:
+          title: "{{ title }}"
+          message: "{{ message }}"
+          data: "{{ push_data }}"
+  - if:
+      - condition: template
+        value_template: "{{ persistent }}"
+    then:
+      - action: persistent_notification.create
+        data:
+          notification_id: "grid_monitor_{{ event }}_{{ now().timestamp() | int }}"
+          title: "{{ title }}"
+          message: "{{ message }}"
