@@ -321,7 +321,9 @@ triggers:
     id: alarmo_state_change
   - trigger: template
     value_template: >
-      {{ expand(environmental_entities) | selectattr('state', 'eq', 'on') | list | length > 0 if environmental_entities else false }}
+      {{ expand(environmental_entities | default([]))
+         | selectattr('state', 'eq', 'on')
+         | list | count > 0 }}
     id: environmental_triggered
 
   # --- Mobile App Notification Triggers ---
@@ -669,7 +671,9 @@ actions:
                     value_template: "{{ trigger.to_state.state == 'triggered' }}"
                   - condition: template
                     value_template: >
-                      {{ expand(environmental_entities) | selectattr('state', 'eq', 'on') | list | length == 0 if environmental_entities else true }}
+                      {{ expand(environmental_entities | default([]))
+                         | selectattr('state', 'eq', 'on')
+                         | list | count == 0 }}
                 sequence:
                   - action: zwave_js.invoke_cc_api
                     target:
