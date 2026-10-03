@@ -74,22 +74,23 @@ blueprint:
           unit_of_measurement: lx
           mode: slider
 
-    action_mode:
-      name: Action Mode
+    enable_turn_on:
+      name: Enable Turn ON Actions
       description: >
-        Choose whether this blueprint should handle turning the light on, turning it
-        off, or both.
-      default: "both"
+        Enable the scenarios that turn the light on when motion is detected or the
+        room gets darker while occupied.
+      default: true
       selector:
-        select:
-          mode: dropdown
-          options:
-            - label: "Turn ON only"
-              value: "on"
-            - label: "Turn OFF only"
-              value: "off"
-            - label: "Turn ON and OFF"
-              value: "both"
+        boolean: {}
+
+    enable_turn_off:
+      name: Enable Turn OFF Actions
+      description: >
+        Enable the scenarios that turn the light off when the room becomes bright
+        enough or motion stops for the configured wait time.
+      default: true
+      selector:
+        boolean: {}
 
     blocking_entity:
       name: Blocking Sensor (Optional)
@@ -146,7 +147,8 @@ variables:
   lux_sensor: !input lux_sensor
   lux_lower: !input lux_lower
   lux_upper: !input lux_upper
-  action_mode: !input action_mode
+  enable_turn_on: !input enable_turn_on
+  enable_turn_off: !input enable_turn_off
   blocking_entity: !input blocking_entity
   blocking_state: !input blocking_state
   blocking_mode: !input blocking_mode
@@ -180,7 +182,7 @@ action:
           - condition: trigger
             id: motion_on
           - condition: template
-            value_template: "{{ action_mode in ['on', 'both'] }}"
+            value_template: "{{ enable_turn_on }}"
           - condition: template
             value_template: >
               {{ states(lux_sensor) | float(0) <= (lux_lower | float(0)) }}
@@ -202,7 +204,7 @@ action:
           - condition: trigger
             id: lux_below
           - condition: template
-            value_template: "{{ action_mode in ['on', 'both'] }}"
+            value_template: "{{ enable_turn_on }}"
           - condition: state
             entity_id: !input motion_sensor
             state: "on"
@@ -224,7 +226,7 @@ action:
           - condition: trigger
             id: lux_above
           - condition: template
-            value_template: "{{ action_mode in ['off', 'both'] }}"
+            value_template: "{{ enable_turn_off }}"
           - condition: template
             value_template: >
               {{ expand(target_lights.entity_id)
@@ -249,7 +251,7 @@ action:
           - condition: trigger
             id: motion_off
           - condition: template
-            value_template: "{{ action_mode in ['off', 'both'] }}"
+            value_template: "{{ enable_turn_off }}"
           - condition: template
             value_template: >
               {{ expand(target_lights.entity_id)
