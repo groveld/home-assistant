@@ -1,5 +1,5 @@
 blueprint:
-  name: Philips Hue Wall Module
+  name: Philips Hue Wall Module (RDM001 and RDM004)
   author: Martin Groeneveld
   source_url: https://raw.githubusercontent.com/groveld/home-assistant/refs/heads/main/homeassistant/blueprints/automation/philips_hue_wall_module.yaml
   description: >
