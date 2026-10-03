@@ -74,41 +74,43 @@ blueprint:
           unit_of_measurement: lx
           mode: slider
 
-    enable_motion_turn_on:
-      name: Enable Motion -> Turn ON
+    motion_action_mode:
+      name: Motion Action Mode
       description: >
-        Allow the motion trigger to turn the light on when motion is detected and
-        the lux is below the configured threshold.
-      default: true
+        Choose what the motion trigger should do:
+        - Turn ON only
+        - Turn OFF only
+        - Both turn ON and OFF
+      default: "both"
       selector:
-        boolean: {}
+        select:
+          mode: dropdown
+          options:
+            - label: "Turn ON only"
+              value: "on"
+            - label: "Turn OFF only"
+              value: "off"
+            - label: "Turn ON and OFF"
+              value: "both"
 
-    enable_lux_turn_on:
-      name: Enable Lux -> Turn ON
+    lux_action_mode:
+      name: Lux Action Mode
       description: >
-        Allow the lux trigger to turn the light on when the room becomes darker
-        while motion is already active.
-      default: true
+        Choose what the lux trigger should do:
+        - Turn ON only
+        - Turn OFF only
+        - Both turn ON and OFF
+      default: "both"
       selector:
-        boolean: {}
-
-    enable_motion_turn_off:
-      name: Enable Motion -> Turn OFF
-      description: >
-        Allow the no-motion trigger to turn the light off after the configured wait
-        time.
-      default: true
-      selector:
-        boolean: {}
-
-    enable_lux_turn_off:
-      name: Enable Lux -> Turn OFF
-      description: >
-        Allow the lux trigger to turn the light off when the room becomes bright
-        enough.
-      default: true
-      selector:
-        boolean: {}
+        select:
+          mode: dropdown
+          options:
+            - label: "Turn ON only"
+              value: "on"
+            - label: "Turn OFF only"
+              value: "off"
+            - label: "Turn ON and OFF"
+              value: "both"
 
     blocking_entity:
       name: Blocking Sensor (Optional)
@@ -165,10 +167,8 @@ variables:
   lux_sensor: !input lux_sensor
   lux_lower: !input lux_lower
   lux_upper: !input lux_upper
-  enable_motion_turn_on: !input enable_motion_turn_on
-  enable_lux_turn_on: !input enable_lux_turn_on
-  enable_motion_turn_off: !input enable_motion_turn_off
-  enable_lux_turn_off: !input enable_lux_turn_off
+  motion_action_mode: !input motion_action_mode
+  lux_action_mode: !input lux_action_mode
   blocking_entity: !input blocking_entity
   blocking_state: !input blocking_state
   blocking_mode: !input blocking_mode
@@ -202,7 +202,7 @@ action:
           - condition: trigger
             id: motion_on
           - condition: template
-            value_template: "{{ enable_motion_turn_on }}"
+            value_template: "{{ motion_action_mode in ['on', 'both'] }}"
           - condition: template
             value_template: >
               {{ states(lux_sensor) | float(0) <= (lux_lower | float(0)) }}
@@ -224,7 +224,7 @@ action:
           - condition: trigger
             id: lux_below
           - condition: template
-            value_template: "{{ enable_lux_turn_on }}"
+            value_template: "{{ lux_action_mode in ['on', 'both'] }}"
           - condition: state
             entity_id: !input motion_sensor
             state: "on"
@@ -246,7 +246,7 @@ action:
           - condition: trigger
             id: lux_above
           - condition: template
-            value_template: "{{ enable_lux_turn_off }}"
+            value_template: "{{ lux_action_mode in ['off', 'both'] }}"
           - condition: template
             value_template: >
               {{ expand(target_lights.entity_id)
@@ -271,7 +271,7 @@ action:
           - condition: trigger
             id: motion_off
           - condition: template
-            value_template: "{{ enable_motion_turn_off }}"
+            value_template: "{{ motion_action_mode in ['off', 'both'] }}"
           - condition: template
             value_template: >
               {{ expand(target_lights.entity_id)
