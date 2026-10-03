@@ -30,7 +30,7 @@ entry, or by navigating to:
 
 [![Import Blueprint](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https://raw.githubusercontent.com/groveld/home-assistant/main/homeassistant/blueprints/automation/motion_activated_light.yaml)
 
-#### [Philips Hue Wall Module](https://raw.githubusercontent.com/groveld/home-assistant/refs/heads/main/homeassistant/blueprints/automation/philips_hue_wall_module.yaml)
+#### [Philips Hue Wall Module (RDM001 and RDM004)](https://raw.githubusercontent.com/groveld/home-assistant/refs/heads/main/homeassistant/blueprints/automation/philips_hue_wall_module.yaml)
 
 [![Import Blueprint](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https://raw.githubusercontent.com/groveld/home-assistant/main/homeassistant/blueprints/automation/philips_hue_wall_module.yaml)
 
