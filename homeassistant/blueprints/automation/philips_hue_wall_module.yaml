@@ -24,102 +24,72 @@ blueprint:
             - integration: zha
               manufacturer: Signify Netherlands B.V.
               model: RDM004
-    left_press:
+    left_press: &action_input
       name: Left Press
       description: Left press
       default: []
       selector:
         action: null
     left_short_release:
+      <<: *action_input
       name: Left Short Release
       description: Left Short Release
-      default: []
-      selector:
-        action: null
     left_double_press:
+      <<: *action_input
       name: Left Double Press
       description: Left Double Press
-      default: []
-      selector:
-        action: null
     left_triple_press:
+      <<: *action_input
       name: Left Triple Press
       description: Left Triple Press
-      default: []
-      selector:
-        action: null
     left_quadruple_press:
+      <<: *action_input
       name: Left Quadruple Press
       description: Left Quadruple Press
-      default: []
-      selector:
-        action: null
     left_quintuple_press:
+      <<: *action_input
       name: Left Quintuple Press
       description: Left Quintuple Press
-      default: []
-      selector:
-        action: null
     left_hold:
+      <<: *action_input
       name: Left Hold
       description: Left Hold
-      default: []
-      selector:
-        action: null
     left_long_release:
+      <<: *action_input
       name: Left Long Release
-      description: Left Long Relase
-      default: []
-      selector:
-        action: null
+      description: Left Long Release
     right_press:
+      <<: *action_input
       name: Right Press
       description: Right press
-      default: []
-      selector:
-        action: null
     right_short_release:
+      <<: *action_input
       name: Right Short Release
       description: Right Short Release
-      default: []
-      selector:
-        action: null
     right_double_press:
+      <<: *action_input
       name: Right Double Press
       description: Right Double Press
-      default: []
-      selector:
-        action: null
     right_triple_press:
+      <<: *action_input
       name: Right Triple Press
       description: Right Triple Press
-      default: []
-      selector:
-        action: null
     right_quadruple_press:
+      <<: *action_input
       name: Right Quadruple Press
       description: Right Quadruple Press
-      default: []
-      selector:
-        action: null
     right_quintuple_press:
+      <<: *action_input
       name: Right Quintuple Press
       description: Right Quintuple Press
-      default: []
-      selector:
-        action: null
     right_hold:
+      <<: *action_input
       name: Right Hold
       description: Right Hold
-      default: []
-      selector:
-        action: null
     right_long_release:
+      <<: *action_input
       name: Right Long Release
-      description: Right Long Relase
-      default: []
-      selector:
-        action: null
+      description: Right Long Release
 
 trigger:
   - platform: event
@@ -131,41 +101,36 @@ mode: single
 max_exceeded: silent
 
 action:
-  - variables:
-      command: "{{ trigger.event.data.command }}"
-      cluster_id: "{{ trigger.event.data.cluster_id }}"
-      endpoint_id: "{{ trigger.event.data.endpoint_id }}"
-      args: "{{ trigger.event.data.args }}"
   - choose:
-      - conditions: '{{ command == "left_press" }}'
+      - conditions: '{{ trigger.event.data.command == "left_press" }}'
         sequence: !input "left_press"
-      - conditions: '{{ command == "left_short_release" }}'
+      - conditions: '{{ trigger.event.data.command == "left_short_release" }}'
         sequence: !input "left_short_release"
-      - conditions: '{{ command == "left_double_press" }}'
+      - conditions: '{{ trigger.event.data.command == "left_double_press" }}'
         sequence: !input "left_double_press"
-      - conditions: '{{ command == "left_triple_press" }}'
+      - conditions: '{{ trigger.event.data.command == "left_triple_press" }}'
         sequence: !input "left_triple_press"
-      - conditions: '{{ command == "left_quadruple_press" }}'
+      - conditions: '{{ trigger.event.data.command == "left_quadruple_press" }}'
         sequence: !input "left_quadruple_press"
-      - conditions: '{{ command == "left_quintuple_press" }}'
+      - conditions: '{{ trigger.event.data.command == "left_quintuple_press" }}'
         sequence: !input "left_quintuple_press"
-      - conditions: '{{ command == "left_hold" }}'
+      - conditions: '{{ trigger.event.data.command == "left_hold" }}'
         sequence: !input "left_hold"
-      - conditions: '{{ command == "left_long_release" }}'
+      - conditions: '{{ trigger.event.data.command == "left_long_release" }}'
         sequence: !input "left_long_release"
-      - conditions: '{{ command == "right_press" }}'
+      - conditions: '{{ trigger.event.data.command == "right_press" }}'
         sequence: !input "right_press"
-      - conditions: '{{ command == "right_short_release" }}'
+      - conditions: '{{ trigger.event.data.command == "right_short_release" }}'
         sequence: !input "right_short_release"
-      - conditions: '{{ command == "right_double_press" }}'
+      - conditions: '{{ trigger.event.data.command == "right_double_press" }}'
         sequence: !input "right_double_press"
-      - conditions: '{{ command == "right_triple_press" }}'
+      - conditions: '{{ trigger.event.data.command == "right_triple_press" }}'
         sequence: !input "right_triple_press"
-      - conditions: '{{ command == "right_quadruple_press" }}'
+      - conditions: '{{ trigger.event.data.command == "right_quadruple_press" }}'
         sequence: !input "right_quadruple_press"
-      - conditions: '{{ command == "right_quintuple_press" }}'
+      - conditions: '{{ trigger.event.data.command == "right_quintuple_press" }}'
         sequence: !input "right_quintuple_press"
-      - conditions: '{{ command == "right_hold" }}'
+      - conditions: '{{ trigger.event.data.command == "right_hold" }}'
         sequence: !input "right_hold"
-      - conditions: '{{ command == "right_long_release" }}'
+      - conditions: '{{ trigger.event.data.command == "right_long_release" }}'
         sequence: !input "right_long_release"
