@@ -24,72 +24,102 @@ blueprint:
             - integration: zha
               manufacturer: Signify Netherlands B.V.
               model: RDM004
-    left_press: &action_input
+    left_press:
       name: Left Press
       description: Left press
       default: []
       selector:
         action: null
     left_short_release:
-      <<: *action_input
       name: Left Short Release
       description: Left Short Release
+      default: []
+      selector:
+        action: null
     left_double_press:
-      <<: *action_input
       name: Left Double Press
       description: Left Double Press
+      default: []
+      selector:
+        action: null
     left_triple_press:
-      <<: *action_input
       name: Left Triple Press
       description: Left Triple Press
+      default: []
+      selector:
+        action: null
     left_quadruple_press:
-      <<: *action_input
       name: Left Quadruple Press
       description: Left Quadruple Press
+      default: []
+      selector:
+        action: null
     left_quintuple_press:
-      <<: *action_input
       name: Left Quintuple Press
       description: Left Quintuple Press
+      default: []
+      selector:
+        action: null
     left_hold:
-      <<: *action_input
       name: Left Hold
       description: Left Hold
+      default: []
+      selector:
+        action: null
     left_long_release:
-      <<: *action_input
       name: Left Long Release
       description: Left Long Release
+      default: []
+      selector:
+        action: null
     right_press:
-      <<: *action_input
       name: Right Press
       description: Right press
+      default: []
+      selector:
+        action: null
     right_short_release:
-      <<: *action_input
       name: Right Short Release
       description: Right Short Release
+      default: []
+      selector:
+        action: null
     right_double_press:
-      <<: *action_input
       name: Right Double Press
       description: Right Double Press
+      default: []
+      selector:
+        action: null
     right_triple_press:
-      <<: *action_input
       name: Right Triple Press
       description: Right Triple Press
+      default: []
+      selector:
+        action: null
     right_quadruple_press:
-      <<: *action_input
       name: Right Quadruple Press
       description: Right Quadruple Press
+      default: []
+      selector:
+        action: null
     right_quintuple_press:
-      <<: *action_input
       name: Right Quintuple Press
       description: Right Quintuple Press
+      default: []
+      selector:
+        action: null
     right_hold:
-      <<: *action_input
       name: Right Hold
       description: Right Hold
+      default: []
+      selector:
+        action: null
     right_long_release:
-      <<: *action_input
       name: Right Long Release
       description: Right Long Release
+      default: []
+      selector:
+        action: null
 
 trigger:
   - platform: event
