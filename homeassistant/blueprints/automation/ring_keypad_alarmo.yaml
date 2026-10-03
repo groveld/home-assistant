@@ -228,12 +228,22 @@ variables:
   counter_entity: !input failed_code_counter
   max_attempts: !input max_failed_attempts
   collision_delay: !input s2_collision_delay
-  formatted_delay: >
-    {% set delay = state_attr(alarm_entity, 'delay') %}
-    {% set total_seconds = delay if delay is not none else 0 %}
-    {% set minutes = total_seconds // 60 %}
-    {% set seconds = total_seconds % 60 %}
-    {{ minutes }}m{{ seconds }}s
+  delay_seconds: >
+    {% set delay = state_attr(alarm_entity, 'delay') | default(0) %}
+    {% if delay is number %}
+      {{ delay | int(0) }}
+    {% elif delay is string %}
+      {% set parts = delay.split(':') %}
+      {% if parts | length == 2 %}
+        {{ (parts[0] | int(0) * 60) + (parts[1] | int(0)) }}
+      {% elif parts | length == 3 %}
+        {{ (parts[0] | int(0) * 3600) + (parts[1] | int(0) * 60) + (parts[2] | int(0)) }}
+      {% else %}
+        {{ delay | int(0) }}
+      {% endif %}
+    {% else %}
+      0
+    {% endif %}
 
 triggers:
   # --- Keypad Triggers ---
@@ -636,7 +646,7 @@ actions:
                       endpoint: "0"
                       property: "18"
                       property_key: timeout
-                      value: "{{ formatted_delay }}"
+                      value: "{{ delay_seconds | int(0) }}"
 
               # Pending
               - conditions:
@@ -651,7 +661,7 @@ actions:
                       endpoint: "0"
                       property: "17"
                       property_key: timeout
-                      value: "{{ formatted_delay }}"
+                      value: "{{ delay_seconds | int(0) }}"
 
               # Triggered (Burglar mode)
               - conditions:
@@ -1168,7 +1178,10 @@ actions:
             target:
               entity_id: !input alarm
             data:
-              mode: "{{ trigger.event.data.action | replace('FORCE_ARM_', '') | lower }}"
+              mode: >
+                {% set action_name = trigger.event.data.action | default('') %}
+                {% set candidate = action_name | replace('FORCE_ARM_', '') | lower %}
+                {{ candidate if candidate in ['home', 'away', 'night', 'vacation', 'custom_bypass'] else keypad_arm_away_mapping }}
               force: true
               skip_delay: true
 
@@ -1181,7 +1194,10 @@ actions:
             target:
               entity_id: !input alarm
             data:
-              mode: "{{ trigger.event.data.action | replace('RETRY_ARM_', '') | lower }}"
+              mode: >
+                {% set action_name = trigger.event.data.action | default('') %}
+                {% set candidate = action_name | replace('RETRY_ARM_', '') | lower %}
+                {{ candidate if candidate in ['home', 'away', 'night', 'vacation', 'custom_bypass'] else keypad_arm_away_mapping }}
               force: false
               skip_delay: false
 
@@ -1222,6 +1238,9 @@ actions:
                     target:
                       entity_id: !input alarm
                     data:
-                      mode: "{{ trigger.event.data.command | default('arm_away') | replace('arm_', '') | lower }}"
+                      mode: >
+                        {% set command_name = trigger.event.data.command | default('arm_away') %}
+                        {% set candidate = command_name | replace('arm_', '') | lower %}
+                        {{ candidate if candidate in ['home', 'away', 'night', 'vacation', 'custom_bypass'] else keypad_arm_away_mapping }}
                       force: true
                       skip_delay: true
