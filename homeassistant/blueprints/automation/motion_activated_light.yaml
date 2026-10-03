@@ -74,6 +74,23 @@ blueprint:
           unit_of_measurement: lx
           mode: slider
 
+    action_mode:
+      name: Action Mode
+      description: >
+        Choose whether this blueprint should handle turning the light on, turning it
+        off, or both.
+      default: "both"
+      selector:
+        select:
+          mode: dropdown
+          options:
+            - label: "Turn ON only"
+              value: "on"
+            - label: "Turn OFF only"
+              value: "off"
+            - label: "Turn ON and OFF"
+              value: "both"
+
     blocking_entity:
       name: Blocking Sensor (Optional)
       description: >
@@ -129,6 +146,7 @@ variables:
   lux_sensor: !input lux_sensor
   lux_lower: !input lux_lower
   lux_upper: !input lux_upper
+  action_mode: !input action_mode
   blocking_entity: !input blocking_entity
   blocking_state: !input blocking_state
   blocking_mode: !input blocking_mode
@@ -162,6 +180,8 @@ action:
           - condition: trigger
             id: motion_on
           - condition: template
+            value_template: "{{ action_mode in ['on', 'both'] }}"
+          - condition: template
             value_template: >
               {{ states(lux_sensor) | float(0) <= (lux_lower | float(0)) }}
           - condition: template
@@ -181,6 +201,8 @@ action:
       - conditions:
           - condition: trigger
             id: lux_below
+          - condition: template
+            value_template: "{{ action_mode in ['on', 'both'] }}"
           - condition: state
             entity_id: !input motion_sensor
             state: "on"
@@ -201,6 +223,8 @@ action:
       - conditions:
           - condition: trigger
             id: lux_above
+          - condition: template
+            value_template: "{{ action_mode in ['off', 'both'] }}"
           - condition: template
             value_template: >
               {{ expand(target_lights.entity_id)
@@ -224,6 +248,8 @@ action:
       - conditions:
           - condition: trigger
             id: motion_off
+          - condition: template
+            value_template: "{{ action_mode in ['off', 'both'] }}"
           - condition: template
             value_template: >
               {{ expand(target_lights.entity_id)
