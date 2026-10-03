@@ -127,7 +127,7 @@ trigger:
     event_data:
       device_id: !input remote
 
-mode: restart
+mode: single
 max_exceeded: silent
 
 action:
