@@ -132,69 +132,40 @@ max_exceeded: silent
 
 action:
   - variables:
-      command: "{{ trigger.event.data.command | default('') }}"
+      command: "{{ trigger.event.data.command }}"
+      cluster_id: "{{ trigger.event.data.cluster_id }}"
+      endpoint_id: "{{ trigger.event.data.endpoint_id }}"
+      args: "{{ trigger.event.data.args }}"
   - choose:
-      - conditions:
-          - condition: template
-            value_template: "{{ command == 'left_press' }}"
-        sequence: !input left_press
-      - conditions:
-          - condition: template
-            value_template: "{{ command == 'left_short_release' }}"
-        sequence: !input left_short_release
-      - conditions:
-          - condition: template
-            value_template: "{{ command == 'left_double_press' }}"
-        sequence: !input left_double_press
-      - conditions:
-          - condition: template
-            value_template: "{{ command == 'left_triple_press' }}"
-        sequence: !input left_triple_press
-      - conditions:
-          - condition: template
-            value_template: "{{ command == 'left_quadruple_press' }}"
-        sequence: !input left_quadruple_press
-      - conditions:
-          - condition: template
-            value_template: "{{ command == 'left_quintuple_press' }}"
-        sequence: !input left_quintuple_press
-      - conditions:
-          - condition: template
-            value_template: "{{ command == 'left_hold' }}"
-        sequence: !input left_hold
-      - conditions:
-          - condition: template
-            value_template: "{{ command == 'left_long_release' }}"
-        sequence: !input left_long_release
-      - conditions:
-          - condition: template
-            value_template: "{{ command == 'right_press' }}"
-        sequence: !input right_press
-      - conditions:
-          - condition: template
-            value_template: "{{ command == 'right_short_release' }}"
-        sequence: !input right_short_release
-      - conditions:
-          - condition: template
-            value_template: "{{ command == 'right_double_press' }}"
-        sequence: !input right_double_press
-      - conditions:
-          - condition: template
-            value_template: "{{ command == 'right_triple_press' }}"
-        sequence: !input right_triple_press
-      - conditions:
-          - condition: template
-            value_template: "{{ command == 'right_quadruple_press' }}"
-        sequence: !input right_quadruple_press
-      - conditions:
-          - condition: template
-            value_template: "{{ command == 'right_quintuple_press' }}"
-        sequence: !input right_quintuple_press
-      - conditions:
-          - condition: template
-            value_template: "{{ command == 'right_hold' }}"
-        sequence: !input right_hold
-      - conditions:
-          - condition: template
-            value_template: "{{ command == 'right_long_release' }}"
-        sequence: !input right_long_release
+      - conditions: '{{ command == "left_press" }}'
+        sequence: !input "left_press"
+      - conditions: '{{ command == "left_short_release" }}'
+        sequence: !input "left_short_release"
+      - conditions: '{{ command == "left_double_press" }}'
+        sequence: !input "left_double_press"
+      - conditions: '{{ command == "left_triple_press" }}'
+        sequence: !input "left_triple_press"
+      - conditions: '{{ command == "left_quadruple_press" }}'
+        sequence: !input "left_quadruple_press"
+      - conditions: '{{ command == "left_quintuple_press" }}'
+        sequence: !input "left_quintuple_press"
+      - conditions: '{{ command == "left_hold" }}'
+        sequence: !input "left_hold"
+      - conditions: '{{ command == "left_long_release" }}'
+        sequence: !input "left_long_release"
+      - conditions: '{{ command == "right_press" }}'
+        sequence: !input "right_press"
+      - conditions: '{{ command == "right_short_release" }}'
+        sequence: !input "right_short_release"
+      - conditions: '{{ command == "right_double_press" }}'
+        sequence: !input "right_double_press"
+      - conditions: '{{ command == "right_triple_press" }}'
+        sequence: !input "right_triple_press"
+      - conditions: '{{ command == "right_quadruple_press" }}'
+        sequence: !input "right_quadruple_press"
+      - conditions: '{{ command == "right_quintuple_press" }}'
+        sequence: !input "right_quintuple_press"
+      - conditions: '{{ command == "right_hold" }}'
+        sequence: !input "right_hold"
+      - conditions: '{{ command == "right_long_release" }}'
+        sequence: !input "right_long_release"
