@@ -74,20 +74,38 @@ blueprint:
           unit_of_measurement: lx
           mode: slider
 
-    enable_turn_on:
-      name: Enable Turn ON Actions
+    enable_motion_turn_on:
+      name: Enable Motion -> Turn ON
       description: >
-        Enable the scenarios that turn the light on when motion is detected or the
-        room gets darker while occupied.
+        Allow the motion trigger to turn the light on when motion is detected and
+        the lux is below the configured threshold.
       default: true
       selector:
         boolean: {}
 
-    enable_turn_off:
-      name: Enable Turn OFF Actions
+    enable_lux_turn_on:
+      name: Enable Lux -> Turn ON
       description: >
-        Enable the scenarios that turn the light off when the room becomes bright
-        enough or motion stops for the configured wait time.
+        Allow the lux trigger to turn the light on when the room becomes darker
+        while motion is already active.
+      default: true
+      selector:
+        boolean: {}
+
+    enable_motion_turn_off:
+      name: Enable Motion -> Turn OFF
+      description: >
+        Allow the no-motion trigger to turn the light off after the configured wait
+        time.
+      default: true
+      selector:
+        boolean: {}
+
+    enable_lux_turn_off:
+      name: Enable Lux -> Turn OFF
+      description: >
+        Allow the lux trigger to turn the light off when the room becomes bright
+        enough.
       default: true
       selector:
         boolean: {}
@@ -147,8 +165,10 @@ variables:
   lux_sensor: !input lux_sensor
   lux_lower: !input lux_lower
   lux_upper: !input lux_upper
-  enable_turn_on: !input enable_turn_on
-  enable_turn_off: !input enable_turn_off
+  enable_motion_turn_on: !input enable_motion_turn_on
+  enable_lux_turn_on: !input enable_lux_turn_on
+  enable_motion_turn_off: !input enable_motion_turn_off
+  enable_lux_turn_off: !input enable_lux_turn_off
   blocking_entity: !input blocking_entity
   blocking_state: !input blocking_state
   blocking_mode: !input blocking_mode
@@ -182,7 +202,7 @@ action:
           - condition: trigger
             id: motion_on
           - condition: template
-            value_template: "{{ enable_turn_on }}"
+            value_template: "{{ enable_motion_turn_on }}"
           - condition: template
             value_template: >
               {{ states(lux_sensor) | float(0) <= (lux_lower | float(0)) }}
@@ -204,7 +224,7 @@ action:
           - condition: trigger
             id: lux_below
           - condition: template
-            value_template: "{{ enable_turn_on }}"
+            value_template: "{{ enable_lux_turn_on }}"
           - condition: state
             entity_id: !input motion_sensor
             state: "on"
@@ -226,7 +246,7 @@ action:
           - condition: trigger
             id: lux_above
           - condition: template
-            value_template: "{{ enable_turn_off }}"
+            value_template: "{{ enable_lux_turn_off }}"
           - condition: template
             value_template: >
               {{ expand(target_lights.entity_id)
@@ -251,7 +271,7 @@ action:
           - condition: trigger
             id: motion_off
           - condition: template
-            value_template: "{{ enable_turn_off }}"
+            value_template: "{{ enable_motion_turn_off }}"
           - condition: template
             value_template: >
               {{ expand(target_lights.entity_id)
