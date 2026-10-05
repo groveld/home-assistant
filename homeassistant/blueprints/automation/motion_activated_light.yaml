@@ -208,6 +208,12 @@ action:
               {{ states(lux_sensor) | float(0) <= (lux_lower | float(0)) }}
           - condition: template
             value_template: >
+              {{ expand(target_lights.entity_id)
+                 | selectattr('state', 'eq', 'off')
+                 | list
+                 | count > 0 }}
+          - condition: template
+            value_template: >
               {% if blocking_entity in [none, '', []] %}
                 true
               {% elif blocking_mode in ['on', 'both'] %}
@@ -228,6 +234,12 @@ action:
           - condition: state
             entity_id: !input motion_sensor
             state: "on"
+          - condition: template
+            value_template: >
+              {{ expand(target_lights.entity_id)
+                 | selectattr('state', 'eq', 'off')
+                 | list
+                 | count > 0 }}
           - condition: template
             value_template: >
               {% if blocking_entity in [none, '', []] %}
