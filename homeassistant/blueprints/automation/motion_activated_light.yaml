@@ -202,7 +202,10 @@ action:
       # ---------- MANUAL REFRESH (evaluate current states) ----------
       - conditions:
           - condition: template
-            value_template: "{{ trigger is not defined or trigger.id in [none, ''] }}"
+            value_template: >
+              {{ trigger is not defined
+                 or (trigger.id | default('')) not in
+                    ['motion_on', 'motion_off', 'lux_below', 'lux_above'] }}
         sequence:
           - choose:
               # Prefer OFF if current states indicate lights should be off.
