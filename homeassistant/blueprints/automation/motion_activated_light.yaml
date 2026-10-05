@@ -8,7 +8,10 @@ blueprint:
     already present. Turn the light off when the room becomes bright enough, or
     when motion stops for the configured time. An optional blocking entity can
     prevent the light from turning on, off, or both (useful as a "pet safe"
-    override).
+    override). A refresh path is included so other automations can force an
+    immediate re-evaluation by firing the
+    `motion_activated_light_refresh` event or by calling
+    `automation.trigger` on this automation.
   domain: automation
   input:
     target_lights:
@@ -192,11 +195,80 @@ trigger:
     entity_id: !input lux_sensor
     above: !input lux_upper
     id: lux_above
+  - platform: event
+    event_type: motion_activated_light_refresh
+    id: refresh
 
 condition: []
 
 action:
   - choose:
+      # ---------- MANUAL REFRESH (evaluate current states) ----------
+      - conditions:
+          - condition: template
+            value_template: "{{ trigger is not defined or trigger.id == 'refresh' }}"
+        sequence:
+          - choose:
+              # Prefer OFF if current states indicate lights should be off.
+              - conditions:
+                  - condition: template
+                    value_template: >
+                      {{ expand(target_lights.entity_id)
+                         | selectattr('state', 'eq', 'on')
+                         | list
+                         | count > 0 }}
+                  - condition: template
+                    value_template: >
+                      {{
+                        (lux_action_mode in ['off', 'both']
+                         and (states(lux_sensor) | float(0)) >= (lux_upper | float(0)))
+                        or
+                        (motion_action_mode in ['off', 'both']
+                         and is_state(motion_sensor, 'off'))
+                      }}
+                  - condition: template
+                    value_template: >
+                      {% if blocking_entity in [none, '', []] %}
+                        true
+                      {% elif blocking_mode in ['off', 'both'] %}
+                        {{ states(blocking_entity) != blocking_state }}
+                      {% else %}
+                        true
+                      {% endif %}
+                sequence:
+                  - service: light.turn_off
+                    target: !input target_lights
+
+              # Otherwise turn ON if current states indicate lights should be on.
+              - conditions:
+                  - condition: template
+                    value_template: >
+                      {{ expand(target_lights.entity_id)
+                         | selectattr('state', 'eq', 'off')
+                         | list
+                         | count > 0 }}
+                  - condition: template
+                    value_template: "{{ is_state(motion_sensor, 'on') }}"
+                  - condition: template
+                    value_template: >
+                      {{ states(lux_sensor) | float(0) <= (lux_lower | float(0)) }}
+                  - condition: template
+                    value_template: >
+                      {{ motion_action_mode in ['on', 'both']
+                         or lux_action_mode in ['on', 'both'] }}
+                  - condition: template
+                    value_template: >
+                      {% if blocking_entity in [none, '', []] %}
+                        true
+                      {% elif blocking_mode in ['on', 'both'] %}
+                        {{ states(blocking_entity) != blocking_state }}
+                      {% else %}
+                        true
+                      {% endif %}
+                sequence:
+                  - service: light.turn_on
+                    target: !input target_lights
+
       # ---------- MOTION DETECTED + DARK ENOUGH (turn ON) ----------
       - conditions:
           - condition: trigger
