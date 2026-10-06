@@ -106,11 +106,19 @@ blueprint:
           filter:
             - domain: input_button
     critical:
-      name: Critical notifications
+      name: Critical outage notifications
       description: >
-        Blackout, brownout and overvoltage alerts bypass silent / Do Not Disturb mode
-        (iOS critical alert, Android alarm stream).
+        Blackout, brownout, overvoltage and test alerts bypass silent / Do Not Disturb
+        mode (iOS critical alert, Android alarm stream).
       default: true
+      selector:
+        boolean:
+    critical_ok:
+      name: Critical normal/restored notifications
+      description: >
+        If enabled, "Voltage back to normal" and "Power restored" notifications also
+        bypass silent / Do Not Disturb mode.
+      default: false
       selector:
         boolean:
     persistent:
@@ -175,6 +183,7 @@ variables:
   blackout_delay: !input blackout_delay
   notify_targets: !input notify_targets
   critical: !input critical
+  critical_ok: !input critical_ok
   persistent: !input persistent
   notify_on_restore: !input notify_on_restore
   event: "{{ trigger.id }}"
@@ -238,7 +247,8 @@ variables:
       Test notification sent at {{ t }}. Current voltage {{ voltage }} V. Brownout threshold {{ low }} V, overvoltage threshold {{ high }} V.
     {% endif %}
   push_data: >
-    {% if critical and event in ['brownout', 'overvoltage', 'blackout', 'test'] %}
+    {% if (critical and event in ['brownout', 'overvoltage', 'blackout', 'test'])
+          or (critical_ok and event in ['normal', 'restored']) %}
       {{ {'push': {'sound': {'name': 'default', 'critical': 1, 'volume': 1.0}},
           'ttl': 0, 'priority': 'high', 'channel': 'alarm_stream'} }}
     {% else %}
