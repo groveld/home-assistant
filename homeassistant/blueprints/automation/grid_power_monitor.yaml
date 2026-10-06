@@ -186,16 +186,27 @@ variables:
   critical_ok: !input critical_ok
   persistent: !input persistent
   notify_on_restore: !input notify_on_restore
-  event: "{{ trigger.get('id', 'manual') if trigger is defined else 'manual' }}"
+  event: >
+    {% if trigger is defined and trigger is not none and trigger.id is defined %}
+      {{ trigger.id }}
+    {% elif is_state(voltage_sensor, ['unavailable', 'unknown']) %}
+      blackout
+    {% elif states(voltage_sensor) | float(0) < low %}
+      brownout
+    {% elif states(voltage_sensor) | float(0) > high %}
+      overvoltage
+    {% else %}
+      manual
+    {% endif %}
   voltage: "{{ states(voltage_sensor) | float(0) | round(0) }}"
-  from_num: "{{ trigger.get('from_state') is not none and trigger.get('from_state').state | is_number }}"
-  to_num: "{{ trigger.get('to_state') is not none and trigger.get('to_state').state | is_number }}"
+  from_num: "{{ (trigger | default({})).get('from_state') is not none and (trigger | default({})).get('from_state').state | is_number }}"
+  to_num: "{{ (trigger | default({})).get('to_state') is not none and (trigger | default({})).get('to_state').state | is_number }}"
   blackout_s: >
     {{ (blackout_delay.hours | default(0)) * 3600
        + (blackout_delay.minutes | default(0)) * 60
        + (blackout_delay.seconds | default(0)) }}
   outage_s: >
-    {% set from_state = trigger.get('from_state') %}
+    {% set from_state = (trigger | default({})).get('from_state') %}
     {% if from_state is not none %}
       {{ (now() - from_state.last_changed).total_seconds() | int }}
     {% else %}0{% endif %}
@@ -203,11 +214,11 @@ variables:
     {% set s = outage_s | int %}
     {{ '%d:%02d:%02d' % (s // 3600, (s % 3600) // 60, s % 60) }}
   entity_name: >
-    {% set entity_id = trigger.get('entity_id') %}
+    {% set entity_id = (trigger | default({})).get('entity_id') %}
     {{ state_attr(entity_id, 'friendly_name') or (entity_id if entity_id is not none else 'unknown entity') }}
   should_notify: >
-    {% set from_state = trigger.get('from_state') %}
-    {% set to_state = trigger.get('to_state') %}
+    {% set from_state = (trigger | default({})).get('from_state') %}
+    {% set to_state = (trigger | default({})).get('to_state') %}
     {% if event in ['brownout', 'overvoltage', 'blackout', 'test'] %}
       true
     {% elif event == 'normal' %}
@@ -235,8 +246,9 @@ variables:
     {{ titles.get(event, 'Grid monitor') }}
   message: >
     {% set t = now().strftime('%H:%M:%S') %}
-    {% set from_state = trigger.get('from_state') %}
-    {% set to_state = trigger.get('to_state') %}
+    {% set trigger_data = trigger | default({}) %}
+    {% set from_state = trigger_data.get('from_state') %}
+    {% set to_state = trigger_data.get('to_state') %}
     {% if event == 'brownout' %}
       Grid voltage dropped to {{ voltage }} V at {{ t }} (limit {{ low }} V). Your UPS may be running on battery.
     {% elif event == 'overvoltage' %}
