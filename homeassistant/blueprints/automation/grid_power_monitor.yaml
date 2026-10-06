@@ -94,9 +94,9 @@ blueprint:
           multiple: true
           filter:
             - domain: sensor
-    notify_targets:
-      name: Notify target(s)
-      description: Select one or more notify targets. Leave empty to disable.
+    notify_devices:
+      name: Mobile Devices to Notify (Optional)
+      description: Select one or more mobile app notify entities. Leave empty to disable.
       default: []
       selector:
         entity:
@@ -176,7 +176,7 @@ variables:
   low: !input low_voltage
   high: !input high_voltage
   blackout_delay: !input blackout_delay
-  notify_targets: !input notify_targets
+  notify_devices: !input notify_devices
   critical: !input critical
   critical_ok: !input critical_ok
   persistent: !input persistent
@@ -285,10 +285,10 @@ actions:
     value_template: "{{ should_notify }}"
   - if:
       - condition: template
-        value_template: "{{ notify_targets | count > 0 }}"
+        value_template: "{{ notify_devices | count > 0 }}"
     then:
       - repeat:
-          for_each: "{{ notify_targets }}"
+          for_each: "{{ notify_devices }}"
           sequence:
             - action: "{{ repeat.item }}"
               continue_on_error: true
