@@ -132,3 +132,6 @@ blueprint:
 
 mode: queued
 max: 10
+
+triggers: []
+actions: []
