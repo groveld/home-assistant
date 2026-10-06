@@ -11,6 +11,8 @@ blueprint:
     - **Recovery**: voltage back to normal / power restored (with duration)
     - **Voltage sag / swell counters** increasing (catches short events)
     - **Power failure counters** increasing (meter confirms an outage)
+    - **Manual Run** evaluates the current sensor state and reports an active brownout,
+      overvoltage, or blackout immediately
 
     Default thresholds follow EN 50160: 230 V ±10% = 207-253 V.
   domain: automation
@@ -94,21 +96,10 @@ blueprint:
           multiple: true
           filter:
             - domain: notify
-    test_buttons:
-      name: Test notification button(s) (optional)
-      description: >
-        Select one or more input_button helpers. Pressing one sends a test
-        notification so you can verify title/message delivery and target setup.
-      default: []
-      selector:
-        entity:
-          multiple: true
-          filter:
-            - domain: input_button
     critical:
       name: Critical outage notifications
       description: >
-        Blackout, brownout, overvoltage and test alerts bypass silent / Do Not Disturb
+        Blackout, brownout and overvoltage alerts bypass silent / Do Not Disturb
         mode (iOS critical alert, Android alarm stream).
       default: true
       selector:
@@ -172,10 +163,6 @@ triggers:
   - trigger: state
     entity_id: !input failure_counters
     id: failure
-  - trigger: state
-    entity_id: !input test_buttons
-    id: test
-
 variables:
   voltage_sensor: !input voltage_sensor
   low: !input low_voltage
@@ -219,7 +206,7 @@ variables:
   should_notify: >
     {% set from_state = (trigger | default({})).get('from_state') %}
     {% set to_state = (trigger | default({})).get('to_state') %}
-    {% if event in ['brownout', 'overvoltage', 'blackout', 'test'] %}
+    {% if event in ['brownout', 'overvoltage', 'blackout'] %}
       true
     {% elif event == 'normal' %}
       {{ notify_on_restore and from_state is not none and from_state.state | is_number and
@@ -240,8 +227,7 @@ variables:
       'restored': '✅ Power restored',
       'sag': '⚡ Voltage sag registered',
       'swell': '⚡ Voltage swell registered',
-      'failure': '⚡ Power failure registered',
-      'test': '🧪 Grid monitor test notification'
+      'failure': '⚡ Power failure registered'
     } %}
     {{ titles.get(event, 'Grid monitor') }}
   message: >
@@ -261,11 +247,9 @@ variables:
       The meter is reporting again at {{ t }}. Voltage {{ voltage }} V. Outage lasted {{ duration }}.
     {% elif event in ['sag', 'swell', 'failure'] %}
       {{ entity_name }} went from {{ from_state.state if from_state is not none else 'unknown' }} to {{ to_state.state if to_state is not none else 'unknown' }} at {{ t }}. Current voltage {{ voltage }} V.
-    {% elif event == 'test' %}
-      Test notification sent at {{ t }}. Current voltage {{ voltage }} V. Brownout threshold {{ low }} V, overvoltage threshold {{ high }} V.
     {% endif %}
   push_data: >
-    {% if (critical and event in ['brownout', 'overvoltage', 'blackout', 'test'])
+    {% if (critical and event in ['brownout', 'overvoltage', 'blackout'])
           or (critical_ok and event in ['normal', 'restored']) %}
       {{ {'push': {'sound': {'name': 'default', 'critical': 1, 'volume': 1.0}},
           'ttl': 0, 'priority': 'high', 'channel': 'alarm_stream'} }}
