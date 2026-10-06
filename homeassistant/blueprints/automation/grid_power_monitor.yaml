@@ -200,10 +200,29 @@ variables:
     {% else %}
       manual
     {% endif %}
+  from_state_value: >
+    {% set raw = (trigger | default({})).get('from_state') %}
+    {% if raw is not none and raw is not string %}
+      {{ raw.state | default(raw) }}
+    {% elif raw is not none %}
+      {{ raw }}
+    {% else %}
+      unknown
+    {% endif %}
+  to_state_value: >
+    {% set raw = (trigger | default({})).get('to_state') %}
+    {% if raw is not none and raw is not string %}
+      {{ raw.state | default(raw) }}
+    {% elif raw is not none %}
+      {{ raw }}
+    {% else %}
+      unknown
+    {% endif %}
   voltage: >
     {% set to_state = (trigger | default({})).get('to_state') %}
-    {% if to_state is not none and to_state.state | is_number %}
-      {{ to_state.state | float | round(0) }}
+    {% set to_state_num = to_state.state if to_state is not none and to_state is not string else to_state %}
+    {% if to_state_num is not none and to_state_num | is_number %}
+      {{ to_state_num | float | round(0) }}
     {% elif event == 'brownout' and min_voltage is not none %}
       {{ min_voltage | round(0) }}
     {% elif event == 'overvoltage' and max_voltage is not none %}
@@ -217,7 +236,7 @@ variables:
        + (blackout_delay.seconds | default(0)) }}
   outage_s: >
     {% set from_state = (trigger | default({})).get('from_state') %}
-    {% if from_state is not none %}
+    {% if from_state is not none and from_state is not string %}
       {{ (now() - from_state.last_changed).total_seconds() | int }}
     {% else %}0{% endif %}
   duration: >
@@ -229,15 +248,17 @@ variables:
   should_notify: >
     {% set from_state = (trigger | default({})).get('from_state') %}
     {% set to_state = (trigger | default({})).get('to_state') %}
+    {% set from_value = from_state.state if from_state is not none and from_state is not string else from_state %}
+    {% set to_value = to_state.state if to_state is not none and to_state is not string else to_state %}
     {% if event in ['brownout', 'overvoltage', 'blackout'] %}
       true
     {% elif event == 'normal' %}
-      {{ notify_on_restore and from_state is not none and from_state.state | is_number and
-         (from_state.state | float < low or from_state.state | float > high) }}
+      {{ notify_on_restore and from_value is not none and from_value | is_number and
+         (from_value | float < low or from_value | float > high) }}
     {% elif event == 'restored' %}
       {{ notify_on_restore and outage_s | int >= blackout_s | int }}
     {% elif event in ['sag', 'swell', 'failure'] %}
-      {{ from_state is not none and to_state is not none and from_state.state | is_number and to_state.state | is_number and to_state.state | float > from_state.state | float }}
+      {{ from_value is not none and to_value is not none and from_value | is_number and to_value | is_number and to_value | float > from_value | float }}
     {% else %}
       false
     {% endif %}
@@ -258,6 +279,8 @@ variables:
     {% set trigger_data = trigger | default({}) %}
     {% set from_state = trigger_data.get('from_state') %}
     {% set to_state = trigger_data.get('to_state') %}
+    {% set from_value = from_state.state if from_state is not none and from_state is not string else from_state %}
+    {% set to_value = to_state.state if to_state is not none and to_state is not string else to_state %}
     {% if event == 'brownout' %}
       Grid voltage dropped to {{ voltage }} V at {{ t }} (limit {{ low }} V). Your UPS may be running on battery.
     {% elif event == 'overvoltage' %}
@@ -265,11 +288,11 @@ variables:
     {% elif event == 'blackout' %}
       The smart meter stopped reporting at {{ t }}. Probable grid outage. Devices are running on UPS battery.
     {% elif event == 'normal' %}
-      Voltage is {{ voltage }} V again (was {{ from_state.state if from_state is not none else 'unknown' }} V).
+      Voltage is {{ voltage }} V again (was {{ from_value if from_value is not none else 'unknown' }} V).
     {% elif event == 'restored' %}
       The meter is reporting again at {{ t }}. Voltage {{ voltage }} V. Outage lasted {{ duration }}.
     {% elif event in ['sag', 'swell', 'failure'] %}
-      {{ entity_name }} went from {{ from_state.state if from_state is not none else 'unknown' }} to {{ to_state.state if to_state is not none else 'unknown' }} at {{ t }}. Current voltage {{ voltage }} V.
+      {{ entity_name }} went from {{ from_value if from_value is not none else 'unknown' }} to {{ to_value if to_value is not none else 'unknown' }} at {{ t }}. Current voltage {{ voltage }} V.
     {% endif %}
 
 actions:
