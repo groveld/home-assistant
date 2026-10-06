@@ -23,12 +23,10 @@ blueprint:
         Select one or more smart-meter sensors (for example Voltage Phase 1/2/3). If your selected
         sensors provide numeric voltage values, brownout/overvoltage checks are applied. If they do
         not, blackout/restored detection still works based on availability.
-      default: []
       selector:
         entity:
           multiple: true
-          filter:
-            - domain: sensor
+          domain: sensor
     low_voltage:
       name: Low voltage threshold (brownout)
       description: Only used when the selected sensor reports a numeric voltage value.
