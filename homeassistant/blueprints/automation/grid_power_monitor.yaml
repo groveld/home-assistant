@@ -187,7 +187,7 @@ variables:
   persistent: !input persistent
   notify_on_restore: !input notify_on_restore
   event: "{{ trigger.get('id', 'manual') if trigger is defined else 'manual' }}"
-  voltage: "{{ states(voltage_sensor) }}"
+  voltage: "{{ states(voltage_sensor) | float(0) | round(0) }}"
   from_num: "{{ trigger.get('from_state') is not none and trigger.get('from_state').state | is_number }}"
   to_num: "{{ trigger.get('to_state') is not none and trigger.get('to_state').state | is_number }}"
   blackout_s: >
