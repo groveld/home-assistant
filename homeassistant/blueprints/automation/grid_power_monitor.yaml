@@ -186,10 +186,10 @@ variables:
   critical_ok: !input critical_ok
   persistent: !input persistent
   notify_on_restore: !input notify_on_restore
-  event: "{{ trigger.id }}"
+  event: "{{ trigger.id if trigger.id is defined else 'manual' }}"
   voltage: "{{ states(voltage_sensor) }}"
-  from_num: "{{ trigger.from_state is not none and trigger.from_state.state | is_number }}"
-  to_num: "{{ trigger.to_state is not none and trigger.to_state.state | is_number }}"
+  from_num: "{{ trigger.from_state is defined and trigger.from_state is not none and trigger.from_state.state | is_number }}"
+  to_num: "{{ trigger.to_state is defined and trigger.to_state is not none and trigger.to_state.state | is_number }}"
   blackout_s: >
     {{ (blackout_delay.hours | default(0)) * 3600
        + (blackout_delay.minutes | default(0)) * 60
@@ -202,7 +202,7 @@ variables:
     {% set s = outage_s | int %}
     {{ '%d:%02d:%02d' % (s // 3600, (s % 3600) // 60, s % 60) }}
   entity_name: >
-    {{ state_attr(trigger.entity_id, 'friendly_name') or trigger.entity_id }}
+    {{ state_attr(trigger.entity_id, 'friendly_name') or (trigger.entity_id if trigger.entity_id is defined else 'unknown entity') }}
   should_notify: >
     {% if event in ['brownout', 'overvoltage', 'blackout', 'test'] %}
       true
@@ -238,11 +238,11 @@ variables:
     {% elif event == 'blackout' %}
       The smart meter stopped reporting at {{ t }}. Probable grid outage. Devices are running on UPS battery.
     {% elif event == 'normal' %}
-      Voltage is {{ voltage }} V again (was {{ trigger.from_state.state }} V).
+      Voltage is {{ voltage }} V again (was {{ trigger.from_state.state if trigger.from_state is defined and trigger.from_state is not none else 'unknown' }} V).
     {% elif event == 'restored' %}
       The meter is reporting again at {{ t }}. Voltage {{ voltage }} V. Outage lasted {{ duration }}.
     {% elif event in ['sag', 'swell', 'failure'] %}
-      {{ entity_name }} went from {{ trigger.from_state.state }} to {{ trigger.to_state.state }} at {{ t }}. Current voltage {{ voltage }} V.
+      {{ entity_name }} went from {{ trigger.from_state.state if trigger.from_state is defined and trigger.from_state is not none else 'unknown' }} to {{ trigger.to_state.state if trigger.to_state is defined and trigger.to_state is not none else 'unknown' }} at {{ t }}. Current voltage {{ voltage }} V.
     {% elif event == 'test' %}
       Test notification sent at {{ t }}. Current voltage {{ voltage }} V. Brownout threshold {{ low }} V, overvoltage threshold {{ high }} V.
     {% endif %}
