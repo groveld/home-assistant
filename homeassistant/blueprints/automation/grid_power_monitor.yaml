@@ -252,14 +252,9 @@ variables:
     {% elif event == 'test' %}
       Test notification sent at {{ t }}. Current voltage {{ voltage }} V. Brownout threshold {{ low }} V, overvoltage threshold {{ high }} V.
     {% endif %}
-  push_data: >
-    {% if (critical and event in ['brownout', 'overvoltage', 'blackout', 'test'])
-          or (critical_ok and event in ['normal', 'restored']) %}
-      {{ {'push': {'sound': {'name': 'default', 'critical': 1, 'volume': 1.0}},
-          'ttl': 0, 'priority': 'high', 'channel': 'alarm_stream'} }}
-    {% else %}
-      {{ {} }}
-    {% endif %}
+  use_critical_push: >
+    {{ (critical and event in ['brownout', 'overvoltage', 'blackout', 'test'])
+       or (critical_ok and event in ['normal', 'restored']) }}
 
 actions:
   - condition: template
@@ -271,12 +266,30 @@ actions:
       - repeat:
           for_each: "{{ notify_targets }}"
           sequence:
-            - action: "{{ repeat.item }}"
-              continue_on_error: true
-              data:
-                title: "{{ title }}"
-                message: "{{ message }}"
-                data: "{{ push_data }}"
+            - if:
+                - condition: template
+                  value_template: "{{ use_critical_push }}"
+              then:
+                - action: "{{ repeat.item }}"
+                  continue_on_error: true
+                  data:
+                    title: "{{ title }}"
+                    message: "{{ message }}"
+                    data:
+                      push:
+                        sound:
+                          name: default
+                          critical: 1
+                          volume: 1.0
+                      ttl: 0
+                      priority: high
+                      channel: alarm_stream
+              else:
+                - action: "{{ repeat.item }}"
+                  continue_on_error: true
+                  data:
+                    title: "{{ title }}"
+                    message: "{{ message }}"
   - if:
       - condition: template
         value_template: "{{ persistent }}"
