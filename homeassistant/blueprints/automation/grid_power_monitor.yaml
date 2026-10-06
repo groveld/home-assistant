@@ -2,15 +2,15 @@ blueprint:
   name: Grid Power Monitor (blackout / brownout / overvoltage)
   author: Martin Groeneveld
   source_url: https://raw.githubusercontent.com/groveld/home-assistant/refs/heads/main/homeassistant/blueprints/automation/grid_power_monitor.yaml
-  description: >
+  description: |
     Monitors a DSMR / P1 smart meter for grid problems and sends notifications for:
 
-    - **Brownout**: voltage below the low threshold\n
-    - **Overvoltage**: voltage above the high threshold\n
-    - **Blackout**: the voltage sensor becomes unavailable (the P1 reader loses power)\n
-    - **Recovery**: voltage back to normal / power restored (with duration)\n
-    - **Voltage sag / swell counters** increasing (catches short events)\n
-    - **Power failure counters** increasing (meter confirms an outage)\n
+    - **Brownout**: voltage below the low threshold
+    - **Overvoltage**: voltage above the high threshold
+    - **Blackout**: the selected meter sensor becomes unavailable (the P1 reader loses power)
+    - **Recovery**: voltage back to normal / power restored (with duration)
+    - **Voltage sag / swell counters** increasing (catches short events)
+    - **Power failure counters** increasing (meter confirms an outage)
     - **Manual Run** evaluates the current sensor state and reports an active brownout,
       overvoltage, or blackout immediately
 
@@ -18,16 +18,18 @@ blueprint:
   domain: automation
   input:
     voltage_sensor:
-      name: Voltage sensor
-      description: The voltage sensor of your meter (e.g. "Voltage Phase 1").
-      default: []
+      name: Meter sensor (availability) / voltage sensor
+      description: >
+        Select a smart-meter sensor. If you have a voltage sensor (for example "Voltage Phase 1"),
+        use that for brownout/overvoltage checks. If you do not have a voltage sensor, select another
+        meter sensor that is normally available; blackout/restored detection will still work.
       selector:
         entity:
-          multiple: true
           filter:
             - domain: sensor
     low_voltage:
       name: Low voltage threshold (brownout)
+      description: Only used when the selected sensor reports a numeric voltage value.
       default: 207
       selector:
         number:
@@ -38,6 +40,7 @@ blueprint:
           mode: box
     high_voltage:
       name: High voltage threshold (overvoltage)
+      description: Only used when the selected sensor reports a numeric voltage value.
       default: 253
       selector:
         number:
@@ -175,19 +178,27 @@ variables:
   critical_ok: !input critical_ok
   persistent: !input persistent
   notify_on_restore: !input notify_on_restore
+  sensor_state: "{{ states(voltage_sensor) }}"
+  sensor_is_number: "{{ sensor_state | is_number }}"
+  sensor_value: "{{ sensor_state | float(0) }}"
   event: >
     {% if trigger is defined and trigger is not none and trigger.id is defined %}
       {{ trigger.id }}
-    {% elif is_state(voltage_sensor, ['unavailable', 'unknown']) %}
+    {% elif sensor_state in ['unavailable', 'unknown'] %}
       blackout
-    {% elif states(voltage_sensor) | float(0) < low %}
+    {% elif sensor_is_number and sensor_value < low %}
       brownout
-    {% elif states(voltage_sensor) | float(0) > high %}
+    {% elif sensor_is_number and sensor_value > high %}
       overvoltage
     {% else %}
       manual
     {% endif %}
-  voltage: "{{ states(voltage_sensor) | float(0) | round(0) }}"
+  voltage: >
+    {% if sensor_is_number %}
+      {{ sensor_value | round(0) }}
+    {% else %}
+      unknown
+    {% endif %}
   from_num: "{{ (trigger | default({})).get('from_state') is not none and (trigger | default({})).get('from_state').state | is_number }}"
   to_num: "{{ (trigger | default({})).get('to_state') is not none and (trigger | default({})).get('to_state').state | is_number }}"
   blackout_s: >
