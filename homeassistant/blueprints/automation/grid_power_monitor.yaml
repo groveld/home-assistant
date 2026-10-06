@@ -252,14 +252,15 @@ actions:
       - condition: template
         value_template: "{{ notify_targets | count > 0 }}"
     then:
-      - action: notify.send_message
-        continue_on_error: true
-        target:
-          entity_id: !input notify_targets
-        data:
-          title: "{{ title }}"
-          message: "{{ message }}"
-          data: "{{ push_data }}"
+      - repeat:
+          for_each: "{{ notify_targets }}"
+          sequence:
+            - action: "{{ repeat.item }}"
+              continue_on_error: true
+              data:
+                title: "{{ title }}"
+                message: "{{ message }}"
+                data: "{{ push_data }}"
   - if:
       - condition: template
         value_template: "{{ persistent }}"
