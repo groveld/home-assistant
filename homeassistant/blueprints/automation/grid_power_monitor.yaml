@@ -5,12 +5,12 @@ blueprint:
   description: >
     Monitors a DSMR / P1 smart meter for grid problems and sends notifications for:
 
-    - **Brownout**: voltage below the low threshold
-    - **Overvoltage**: voltage above the high threshold
-    - **Blackout**: the voltage sensor becomes unavailable (the P1 reader loses power)
-    - **Recovery**: voltage back to normal / power restored (with duration)
-    - **Voltage sag / swell counters** increasing (catches short events)
-    - **Power failure counters** increasing (meter confirms an outage)
+    - **Brownout**: voltage below the low threshold\n
+    - **Overvoltage**: voltage above the high threshold\n
+    - **Blackout**: the voltage sensor becomes unavailable (the P1 reader loses power)\n
+    - **Recovery**: voltage back to normal / power restored (with duration)\n
+    - **Voltage sag / swell counters** increasing (catches short events)\n
+    - **Power failure counters** increasing (meter confirms an outage)\n
     - **Manual Run** evaluates the current sensor state and reports an active brownout,
       overvoltage, or blackout immediately
 
@@ -20,6 +20,7 @@ blueprint:
     voltage_sensor:
       name: Voltage sensor
       description: The voltage sensor of your meter (e.g. "Voltage Phase 1").
+      default: []
       selector:
         entity:
           multiple: true
