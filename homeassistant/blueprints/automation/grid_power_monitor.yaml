@@ -271,10 +271,8 @@ actions:
       - repeat:
           for_each: "{{ notify_targets }}"
           sequence:
-            - action: notify.notify
+            - action: "{{ repeat.item }}"
               continue_on_error: true
-              target:
-                entity_id: "{{ repeat.item }}"
               data:
                 title: "{{ title }}"
                 message: "{{ message }}"
