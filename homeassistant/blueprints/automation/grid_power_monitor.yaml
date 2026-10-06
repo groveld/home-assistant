@@ -271,14 +271,6 @@ variables:
     {% elif event in ['sag', 'swell', 'failure'] %}
       {{ entity_name }} went from {{ from_state.state if from_state is not none else 'unknown' }} to {{ to_state.state if to_state is not none else 'unknown' }} at {{ t }}. Current voltage {{ voltage }} V.
     {% endif %}
-  push_data: >
-    {% if (critical and event in ['brownout', 'overvoltage', 'blackout'])
-          or (critical_ok and event in ['normal', 'restored']) %}
-      {{ {'push': {'sound': {'name': 'default', 'critical': 1, 'volume': 1.0}},
-          'ttl': 0, 'priority': 'high', 'channel': 'alarm_stream'} }}
-    {% else %}
-      {{ {} }}
-    {% endif %}
 
 actions:
   - condition: template
@@ -290,12 +282,36 @@ actions:
       - repeat:
           for_each: "{{ notify_devices }}"
           sequence:
-            - action: "{{ repeat.item }}"
-              continue_on_error: true
-              data:
-                title: "{{ title }}"
-                message: "{{ message }}"
-                data: "{{ push_data }}"
+            - if:
+                - condition: template
+                  value_template: >
+                    {{ (critical and event in ['brownout', 'overvoltage', 'blackout'])
+                       or (critical_ok and event in ['normal', 'restored']) }}
+              then:
+                - action: notify.send_message
+                  continue_on_error: true
+                  target:
+                    entity_id: "{{ repeat.item }}"
+                  data:
+                    title: "{{ title }}"
+                    message: "{{ message }}"
+                    data:
+                      push:
+                        sound:
+                          name: default
+                          critical: 1
+                          volume: 1.0
+                      ttl: 0
+                      priority: high
+                      channel: alarm_stream
+              else:
+                - action: notify.send_message
+                  continue_on_error: true
+                  target:
+                    entity_id: "{{ repeat.item }}"
+                  data:
+                    title: "{{ title }}"
+                    message: "{{ message }}"
   - if:
       - condition: template
         value_template: "{{ persistent }}"
