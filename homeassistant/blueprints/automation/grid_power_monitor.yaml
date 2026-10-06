@@ -18,13 +18,15 @@ blueprint:
   domain: automation
   input:
     voltage_sensor:
-      name: Meter sensor (availability) / voltage sensor
+      name: Meter sensor(s) (availability) / voltage sensor(s)
       description: >
-        Select a smart-meter sensor. If you have a voltage sensor (for example "Voltage Phase 1"),
-        use that for brownout/overvoltage checks. If you do not have a voltage sensor, select another
-        meter sensor that is normally available; blackout/restored detection will still work.
+        Select one or more smart-meter sensors (for example Voltage Phase 1/2/3). If your selected
+        sensors provide numeric voltage values, brownout/overvoltage checks are applied. If they do
+        not, blackout/restored detection still works based on availability.
+      default: []
       selector:
         entity:
+          multiple: true
           filter:
             - domain: sensor
     low_voltage:
@@ -178,24 +180,33 @@ variables:
   critical_ok: !input critical_ok
   persistent: !input persistent
   notify_on_restore: !input notify_on_restore
-  sensor_state: "{{ states(voltage_sensor) }}"
-  sensor_is_number: "{{ sensor_state | is_number }}"
-  sensor_value: "{{ sensor_state | float(0) }}"
+  sensor_entities: "{{ expand(voltage_sensor) }}"
+  unavailable_count: "{{ sensor_entities | selectattr('state', 'in', ['unavailable', 'unknown']) | list | count }}"
+  any_unavailable: "{{ unavailable_count | int > 0 }}"
+  numeric_values: "{{ sensor_entities | map(attribute='state') | select('is_number') | map('float') | list }}"
+  numeric_count: "{{ numeric_values | count }}"
+  min_voltage: "{{ (numeric_values | min) if (numeric_count | int > 0) else none }}"
+  max_voltage: "{{ (numeric_values | max) if (numeric_count | int > 0) else none }}"
   event: >
     {% if trigger is defined and trigger is not none and trigger.id is defined %}
       {{ trigger.id }}
-    {% elif sensor_state in ['unavailable', 'unknown'] %}
+    {% elif any_unavailable %}
       blackout
-    {% elif sensor_is_number and sensor_value < low %}
+    {% elif min_voltage is not none and min_voltage < low %}
       brownout
-    {% elif sensor_is_number and sensor_value > high %}
+    {% elif max_voltage is not none and max_voltage > high %}
       overvoltage
     {% else %}
       manual
     {% endif %}
   voltage: >
-    {% if sensor_is_number %}
-      {{ sensor_value | round(0) }}
+    {% set to_state = (trigger | default({})).get('to_state') %}
+    {% if to_state is not none and to_state.state | is_number %}
+      {{ to_state.state | float | round(0) }}
+    {% elif event == 'brownout' and min_voltage is not none %}
+      {{ min_voltage | round(0) }}
+    {% elif event == 'overvoltage' and max_voltage is not none %}
+      {{ max_voltage | round(0) }}
     {% else %}
       unknown
     {% endif %}
