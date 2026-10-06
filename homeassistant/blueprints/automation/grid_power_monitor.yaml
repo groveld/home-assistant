@@ -202,8 +202,8 @@ variables:
     {% endif %}
   from_state_value: >
     {% set raw = (trigger | default({})).get('from_state') %}
-    {% if raw is not none and raw is not string %}
-      {{ raw.state | default(raw) }}
+    {% if raw is not none and hasattr(raw, 'state') %}
+      {{ raw.state }}
     {% elif raw is not none %}
       {{ raw }}
     {% else %}
@@ -211,8 +211,8 @@ variables:
     {% endif %}
   to_state_value: >
     {% set raw = (trigger | default({})).get('to_state') %}
-    {% if raw is not none and raw is not string %}
-      {{ raw.state | default(raw) }}
+    {% if raw is not none and hasattr(raw, 'state') %}
+      {{ raw.state }}
     {% elif raw is not none %}
       {{ raw }}
     {% else %}
@@ -220,7 +220,7 @@ variables:
     {% endif %}
   voltage: >
     {% set to_state = (trigger | default({})).get('to_state') %}
-    {% set to_state_num = to_state.state if to_state is not none and to_state is not string else to_state %}
+    {% set to_state_num = to_state.state if to_state is not none and hasattr(to_state, 'state') else to_state %}
     {% if to_state_num is not none and to_state_num | is_number %}
       {{ to_state_num | float | round(0) }}
     {% elif event == 'brownout' and min_voltage is not none %}
@@ -248,8 +248,8 @@ variables:
   should_notify: >
     {% set from_state = (trigger | default({})).get('from_state') %}
     {% set to_state = (trigger | default({})).get('to_state') %}
-    {% set from_value = from_state.state if from_state is not none and from_state is not string else from_state %}
-    {% set to_value = to_state.state if to_state is not none and to_state is not string else to_state %}
+    {% set from_value = from_state.state if from_state is not none and hasattr(from_state, 'state') else from_state %}
+    {% set to_value = to_state.state if to_state is not none and hasattr(to_state, 'state') else to_state %}
     {% if event in ['brownout', 'overvoltage', 'blackout'] %}
       true
     {% elif event == 'normal' %}
@@ -279,8 +279,8 @@ variables:
     {% set trigger_data = trigger | default({}) %}
     {% set from_state = trigger_data.get('from_state') %}
     {% set to_state = trigger_data.get('to_state') %}
-    {% set from_value = from_state.state if from_state is not none and from_state is not string else from_state %}
-    {% set to_value = to_state.state if to_state is not none and to_state is not string else to_state %}
+    {% set from_value = from_state.state if from_state is not none and hasattr(from_state, 'state') else from_state %}
+    {% set to_value = to_state.state if to_state is not none and hasattr(to_state, 'state') else to_state %}
     {% if event == 'brownout' %}
       Grid voltage dropped to {{ voltage }} V at {{ t }} (limit {{ low }} V). Your UPS may be running on battery.
     {% elif event == 'overvoltage' %}
