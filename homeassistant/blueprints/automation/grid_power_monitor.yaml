@@ -181,10 +181,9 @@ variables:
   critical_ok: !input critical_ok
   persistent: !input persistent
   notify_on_restore: !input notify_on_restore
-  sensor_entities: "{{ expand(voltage_sensors) }}"
-  unavailable_count: "{{ sensor_entities | selectattr('state', 'in', ['unavailable', 'unknown']) | list | count }}"
+  unavailable_count: "{{ voltage_sensors | select('is_state', ['unavailable', 'unknown']) | list | count }}"
   any_unavailable: "{{ unavailable_count | int > 0 }}"
-  numeric_values: "{{ sensor_entities | map(attribute='state') | select('is_number') | map('float') | list }}"
+  numeric_values: "{{ voltage_sensors | map('states') | select('is_number') | map('float') | list }}"
   numeric_count: "{{ numeric_values | count }}"
   min_voltage: "{{ (numeric_values | min) if (numeric_count | int > 0) else none }}"
   max_voltage: "{{ (numeric_values | max) if (numeric_count | int > 0) else none }}"
