@@ -243,7 +243,7 @@ variables:
     {{ '%d:%02d:%02d' % (s // 3600, (s % 3600) // 60, s % 60) }}
   entity_name: >
     {% set entity_id = (trigger | default({})).get('entity_id') %}
-    {{ state_attr(entity_id, 'friendly_name') or (entity_id if entity_id is not none else 'unknown entity') }}
+    {{ (state_attr(entity_id, 'friendly_name') if entity_id else none) or (entity_id if entity_id is not none else 'unknown entity') }}
   should_notify: >
     {% set from_state = (trigger | default({})).get('from_state') %}
     {% set to_state = (trigger | default({})).get('to_state') %}
